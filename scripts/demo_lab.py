@@ -180,7 +180,7 @@ def main() -> None:
         Path(f"{database}{suffix}").unlink(missing_ok=True)  # always start fresh
     settings = demo_settings(database)
     asyncio.run(build(settings))
-    print(f"Synthetic demo ready: http://127.0.0.1:{PORT}/  (collection disabled)")
+    print(f"Synthetic demo ready: http://127.0.0.1:{PORT}/  (collection disabled)", flush=True)
     uvicorn.run(create_app(settings), host="127.0.0.1", port=PORT, log_level="warning")
 
 

@@ -7,7 +7,9 @@ requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
     "httpx[socks]>=0.27",
-    "sqlalchemy>=2.0",
+    # [asyncio] pulls in greenlet. SQLAlchemy 2.1 stopped installing it by default,
+    # so a plain requirement installs cleanly and then fails on first import.
+    "sqlalchemy[asyncio]>=2.0",
     "aiosqlite>=0.20",
     "asyncpg>=0.29",
     "selectolax>=0.3.21",

@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Umbra — Dark-Web Intelligence</title>
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#d9772b; --accent2:#58a6ff;
+    --ok:#3fb950; --bad:#f85149; --chip:#21262d;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  header { display:flex; align-items:center; gap:12px; padding:10px 18px;
+           background:var(--panel); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+  header h1 { font-size:18px; margin:0; letter-spacing:.5px; }
+  header h1 .u { color:var(--accent); }
+  header .spacer { flex:1; }
+  header input { background:var(--bg); border:1px solid var(--border); color:var(--fg);
+                 padding:6px 8px; border-radius:6px; width:240px; }
+  button, .btn { background:var(--accent); color:#111; border:0; padding:7px 12px;
+          border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; }
+  .btn.secondary { background:var(--chip); color:var(--fg); border:1px solid var(--border); }
+  .btn:hover { filter:brightness(1.08); }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); display:inline-block; }
+  .dot.ok { background:var(--ok); } .dot.bad { background:var(--bad); }
+  nav { display:flex; gap:4px; padding:8px 18px; background:var(--panel); border-bottom:1px solid var(--border);
+        flex-wrap:wrap; position:sticky; top:53px; z-index:9; }
+  nav a { padding:7px 12px; border-radius:6px; color:var(--muted); cursor:pointer; }
+  nav a.active { background:var(--panel2); color:var(--fg); }
+  nav a:hover { color:var(--fg); }
+  main { padding:22px; max-width:1180px; margin:0 auto; }
+  section { display:none; } section.active { display:block; }
+  h2 { font-size:17px; margin:0 0 4px; font-weight:600; }
+  h3 { font-size:13px; margin:0 0 10px; font-weight:600; color:var(--muted);
+       text-transform:uppercase; letter-spacing:.5px; }
+  .hint { color:var(--muted); font-size:13px; margin:0 0 16px; max-width:760px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px; }
+  .card .n { font-size:28px; font-weight:700; line-height:1.1; }
+  .card .l { font-size:13px; font-weight:600; margin-top:2px; }
+  .card .d { color:var(--muted); font-size:11.5px; margin-top:3px; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .fhelp { color:var(--muted); font-size:11.5px; margin-top:4px; }
+  input[type=text], input[type=number], textarea, select {
+    width:100%; background:var(--bg); border:1px solid var(--border); color:var(--fg);
+    padding:8px; border-radius:6px; font:inherit; }
+  textarea { min-height:92px; resize:vertical; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; } .row > * { flex:1; min-width:130px; }
+  .inline { display:flex; gap:16px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .inline label { display:inline; margin:0; color:var(--fg); font-size:13px; }
+  .spacer { flex:1; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  tr.clickable:hover { background:var(--panel2); cursor:pointer; }
+  .ttl { font-weight:600; }
+  .sub { color:var(--muted); font-size:11.5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+         word-break:break-all; }
+  .chip { background:var(--chip); border:1px solid var(--border); border-radius:20px; padding:2px 9px; font-size:11.5px; }
+  .mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; word-break:break-all; }
+  a.link { color:var(--accent2); text-decoration:none; word-break:break-all; }
+  .muted { color:var(--muted); }
+  .empty { color:var(--muted); padding:22px; text-align:center; font-size:13px; }
+  .bar { background:var(--bg); border-radius:4px; height:7px; overflow:hidden; margin-top:5px; }
+  .bar span { display:block; height:100%; background:var(--accent); }
+  .brow { margin-bottom:11px; }
+  .brow .t { display:flex; justify-content:space-between; gap:10px; font-size:12.5px; }
+  /* v3 onion names are 56 characters: truncate the label, never push the count out of the card */
+  .brow .t span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .brow .t span:last-child { flex:none; }
+  #toast { position:fixed; bottom:20px; right:20px; background:var(--bad); color:#fff; padding:10px 16px;
+           border-radius:8px; display:none; max-width:420px; z-index:30; }
+  #modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:20; }
+  #modal .box { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:22px;
+                max-width:780px; width:92%; max-height:82vh; overflow:auto; }
+  #modal pre { white-space:pre-wrap; word-break:break-word; background:var(--bg); padding:12px; border-radius:6px;
+               max-height:280px; overflow:auto; font-size:12px; }
+  .tag { display:inline-block; background:var(--chip); border-radius:6px; padding:2px 7px; margin:2px; font-size:11px; }
+  .running { color:var(--accent); font-weight:600; } .idle { color:var(--muted); }
+  .steps { counter-reset:s; padding-left:0; list-style:none; }
+  .steps li { counter-increment:s; margin-bottom:9px; padding-left:30px; position:relative; }
+  .steps li::before { content:counter(s); position:absolute; left:0; top:0; width:21px; height:21px;
+    background:var(--accent); color:#111; border-radius:50%; text-align:center; font-weight:700; font-size:12px; line-height:21px; }
+  dl dt { font-weight:600; margin-top:12px; }
+  dl dd { margin:2px 0 0; color:var(--muted); }
+main input:not([type=checkbox]) {width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:6px;font:inherit}
+main button {cursor:pointer;max-width:100%;overflow-wrap:anywhere}
+#graph-result td, #audit-results td {overflow-wrap:anywhere}
+#graph-result table, #audit-results table {table-layout:fixed}
+#graph-result svg {border-radius:10px;margin:12px 0}
+#ws-results mark {background:#ffe391;color:#141414;padding:1px 2px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="u">◱</span> UMBRA</h1>
+  <span class="muted" style="font-size:12px">dark-web intelligence</span>
+  <div class="spacer"></div>
+  <button class="btn secondary" onclick="showHelp()">? What is this</button>
+  <span class="dot" id="conn" title="connection to the API"></span>
+  <input id="apikey" type="text" placeholder="API key (blank if none set)">
+  <button onclick="saveKey()">Save</button>
+</header>
+<nav id="nav"></nav>
+<main>
+  <section id="dashboard" class="active">
+    <h2>Overview</h2>
+    <p class="hint">Everything the crawler has collected. Umbra fetches dark-web pages, pulls out useful
+      intelligence (wallets, leaked logins, marketplace listings), links related activity to actors, and
+      alerts you when something you care about shows up. This page refreshes automatically.</p>
+    <div id="collection-health"></div>
+    <div id="getting-started"></div>
+    <div class="cards" id="stats"></div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="panel"><h3>What kind of pages</h3><div id="b-types"></div></div>
+      <div class="panel"><h3>Threat categories</h3><div id="b-threats"></div></div>
+      <div class="panel"><h3>Busiest sites</h3><div id="b-hosts"></div></div>
+      <div class="panel"><h3>Indicator observations by type</h3><div id="b-iocs"></div></div>
+    </div>
+    <div class="panel"><h3>Recently crawled</h3><div id="d-recent"></div></div>
+    <div class="panel"><h3>Latest alerts</h3><div id="d-alerts"></div></div>
+  </section>
+
+  <section id="crawl">
+    <h2>Crawl</h2>
+    <p class="hint">Give the crawler somewhere to start. It fetches each seed, follows the links it finds,
+      extracts intelligence from every page, and stores the results — which then appear across the other tabs.</p>
+    <div class="panel" style="margin-bottom:14px">
+      <label>Start from a source pack</label>
+      <div class="inline" style="flex-wrap:wrap">
+        <select id="pack_name" style="min-width:230px" onchange="packChanged()"></select>
+        <button class="btn secondary" onclick="seedPack()">＋ Queue this pack</button>
+        <button class="btn secondary" onclick="loadPacks()">⟳ Refresh</button>
+      </div>
+      <div class="fhelp" style="margin-top:8px" id="pack_desc">Loading source packs…</div>
+      <div class="fhelp" style="margin-top:6px">A pack is a curated list of services to crawl, so you don't
+        start from a blank box. Queuing adds them to the frontier — press <b>Start crawl</b> below (with the
+        seed box empty) to begin working through it. Packs shipped here were generated from services this
+        install has <i>actually observed answering</i>, with the evidence recorded against each one; drop your
+        own JSON packs in <span class="mono">source_packs_path</span> to add sector-specific coverage.</div>
+    </div>
+    <div class="panel">
+      <label>Seed URLs</label>
+      <textarea id="seeds" placeholder="https://example.com/&#10;http://someservice................onion/"></textarea>
+      <div class="fhelp">One per line. These are the starting points — the crawler follows links onward from here.</div>
+      <div class="row">
+        <div><label>Max pages</label><input id="max_pages" type="number" value="50">
+          <div class="fhelp">Stop after this many pages.</div></div>
+        <div><label>Max depth</label><input id="max_depth" type="number" value="3">
+          <div class="fhelp">How many links deep to follow from each seed.</div></div>
+        <div><label>Focus keywords</label><input id="focus" type="text" placeholder="market, vendor, leak">
+          <div class="fhelp">Optional. Crawls related links first — matches by meaning, not just exact words.</div></div>
+      </div>
+      <div class="inline">
+        <label><input type="checkbox" id="allow_clearnet"> Allow normal websites</label>
+        <label><input type="checkbox" id="llm"> AI page analysis</label>
+        <label title="Prioritises seeds but does not restrict hosts"><input type="checkbox" id="pin"> Prioritise these sites</label>
+        <div class="spacer"></div>
+        <button class="btn secondary" id="stopbtn" style="display:none" onclick="stopCrawl()">■ Stop</button>
+        <button class="btn" onclick="startCrawl()">▶ Start crawl</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label><input type="checkbox" id="strict_scope" checked> Restrict to seed hosts</label>
+          <div class="fhelp">Enforced for queued pages, discovered links, and every redirect. Applies to this crawl; other workers keep their own settings.</div></div>
+        <div><label for="allowed_hosts">Allowed hosts (optional)</label><input id="allowed_hosts" placeholder="example.onion, another.onion">
+          <div class="fhelp">Exact hosts only. When blank, restricted mode uses the seed hosts.</div></div>
+        <div><label><input type="checkbox" id="store_html"> Retain original body bytes</label>
+          <div class="fhelp">Retains permitted HTML and body bytes for verifiable exports. Uses more storage.</div></div>
+      </div>
+      <button class="btn secondary" onclick="previewScope()">Preview crawl scope</button>
+      <div id="scope-preview" class="fhelp" aria-live="polite"></div>
+      <div class="fhelp" style="margin-top:8px">
+        <b>Allow normal websites</b> — tick this to crawl ordinary http(s) sites. Leave it off to crawl only
+        <code>.onion</code> services (which needs Tor running). &nbsp;·&nbsp;
+        <b>AI page analysis</b> — uses Claude to classify and summarise each page (needs an API key configured).
+      </div>
+    </div>
+    <div class="panel"><h3>Status</h3><div id="crawl-status" class="idle">Idle — no crawl running.</div></div>
+  </section>
+
+  <section id="search">
+    <h2>Search</h2>
+    <p class="hint">Searches page content by <b>meaning</b>, not just exact keywords — so "stolen cards" can
+      surface a page that says "dumps &amp; CVV". Click any result to read the page.</p>
+    <div class="panel">
+      <div class="inline"><input id="q" type="text" placeholder="e.g. stolen credit card dumps"
+             onkeydown="if(event.key==='Enter')runSearch()"><button class="btn" onclick="runSearch()">Search</button>
+        <select id="search_mode" aria-label="Search mode"><option value="semantic">Meaning / keywords</option><option value="exact">Exact identifier</option></select>
+        <button class="btn secondary" onclick="reembed()">⟳ Re-embed</button></div>
+      <div class="fhelp" style="margin-top:8px" id="emb-status">Checking search index…</div>
+      <div class="fhelp" style="margin-top:6px"><b>Re-embed</b> rebuilds the search index over pages you've
+        already crawled — needed after changing the embedding model, and it needs no re-crawling. Results are
+        compared by model identity and vector width, so pages indexed by a previous model become invisible to search rather than
+        merely worse: an out-of-date index looks exactly like "no matches".</div>
+    </div>
+    <div id="search-results"></div>
+  </section>
+
+  <section id="timeline">
+    <h2>Timeline</h2>
+    <p class="hint">Observed changes, newest first. Open a page to compare retained versions.
+      A failed fetch can be temporary; a change or outage alone does not establish its cause.</p>
+    <div class="panel"><div class="inline" style="flex-wrap:wrap">
+      <button class="btn" onclick="loadTimeline('')">All events</button>
+      <button class="btn secondary" onclick="loadTimeline('notable')">★ Notable only</button>
+      <button class="btn secondary" onclick="loadTimeline('page_unreachable')">Went offline</button>
+      <button class="btn secondary" onclick="loadTimeline('page_recovered')">Came back</button>
+      <button class="btn secondary" onclick="loadTimeline('indicator_new')">New identifiers</button>
+      <button class="btn secondary" onclick="loadTimeline('page_changed')">Content changed</button>
+      <button class="btn secondary" onclick="loadLiveness()">📡 Service status</button>
+      <button class="btn secondary" onclick="loadRuns()">⚙️ Collection passes</button>
+      <button class="btn secondary" onclick="backfillTimeline()">⏪ Backfill history</button></div>
+      <div class="fhelp" style="margin-top:8px"><b>★ Notable</b> hides routine content churn and leaves the
+        things worth acting on: outages, recoveries and newly-seen actor identifiers. Events only ever record
+        <i>transitions</i> — a page fetched a hundred times unchanged produces none, so an empty timeline means
+        nothing moved, not that nothing was checked.
+        <br><b>Backfill history</b> reconstructs what can be proven from pages you crawled before this tab
+        existed — first-seen dates, and services already known to be unreachable. Those entries are timestamped
+        <i>when the crawler observed</i> the state, which is not necessarily when it changed; they're labelled
+        as reconstructed so they're never confused with live detections.</div></div>
+    <div class="panel" id="timeline-table"></div>
+  </section>
+
+  <section id="sites">
+    <h2>Sites</h2>
+    <p class="hint">Every hidden service the crawler has seen, and how much of each you've actually fetched.
+      This is your targeting view: directories give you lots of <b>queued</b> links, but the real intelligence
+      is on the services themselves. <b>Click a site</b> to load it into the Crawl tab.</p>
+    <div class="inline" style="margin-bottom:14px">
+      <button class="btn secondary" onclick="loadSites()">⟳ Refresh</button>
+      <button class="btn secondary" onclick="clearQueue()">🗑 Clear queued links</button>
+      <button class="btn secondary" onclick="rescoreQueue()">↕ Re-prioritise queue</button>
+      <span class="fhelp">Clearing removes links found but never fetched. Crawled pages are kept.</span>
+    </div>
+    <div class="panel" id="sites-table"></div>
+  </section>
+
+  <section id="pages">
+    <h2>Pages</h2>
+    <p class="hint">Every page the crawler stored. Use the filters to narrow down, and <b>click any row</b>
+      to read its content and see the indicators extracted from it.</p>
+    <div class="panel"><div class="row">
+      <div><label>Site / host</label><input id="f_host" type="text" placeholder="example.onion"></div>
+      <div><label>Page type</label><input id="f_ptype" type="text" placeholder="marketplace, forum, leak…"></div>
+      <div><label>Threat category</label><input id="f_threat" type="text" placeholder="fraud, drugs…"></div>
+      <div><label>Status</label><input id="f_status" type="text" placeholder="crawled"></div>
+      <div style="flex:0"><label>&nbsp;</label><button class="btn" onclick="loadPages()">Apply filters</button></div>
+    </div></div>
+    <div class="panel" id="pages-table"></div>
+  </section>
+
+  <section id="iocs">
+    <h2>Indicators</h2>
+    <p class="hint">Machine-matchable artifacts pulled out of pages — cryptocurrency wallets, PGP fingerprints,
+      contact addresses, CVE IDs and onion addresses. These are what you pivot on and build watchlists from.</p>
+    <div class="panel"><div class="inline">
+      <input id="ioc_type" type="text" placeholder="filter by type — or use the buttons below">
+      <button class="btn" onclick="loadIocs()">Load</button>
+      <button class="btn secondary" onclick="exportIocs()">⭳ CSV</button>
+      <button class="btn secondary" onclick="exportStix()">⭳ STIX 2.1</button>
+      <button class="btn secondary" onclick="exportEvidence()">⭳ Evidence bundle</button>
+      <button class="btn secondary" onclick="reprocess()">♻ Re-extract</button></div>
+      <div class="inline" style="margin-top:8px;flex-wrap:wrap">
+        <button class="btn secondary" onclick="iocFilter('actor')">★ Actor identifiers</button>
+        <button class="btn secondary" onclick="iocFilter('pgp_fp')">PGP fingerprints</button>
+        <button class="btn secondary" onclick="iocFilter('btc,eth,xmr')">Wallets</button>
+        <button class="btn secondary" onclick="iocFilter('contact_email,jabber')">Contacts</button>
+        <button class="btn secondary" onclick="iocFilter('email')">Victim emails</button>
+        <button class="btn secondary" onclick="iocFilter('cve')">CVEs</button>
+        <button class="btn secondary" onclick="iocFilter('onion')">Onion links</button>
+        <button class="btn secondary" onclick="iocFilter('')">Everything</button></div>
+      <div class="fhelp" style="margin-top:8px"><b>★ Actor identifiers</b> is usually where you want to start:
+        wallets, PGP fingerprints, published contact addresses and vendor handles — the things that identify
+        <i>who is selling</i>, and the exact set the actor graph links on. Onion addresses typically outnumber
+        everything else about a hundred to one, so unfiltered views bury the useful rows.
+        <br><b>Contact classification is a heuristic:</b> a provider or domain does not prove whether an
+        address belongs to an operator or a victim. Inspect the source and use Review links before relying on a connection.
+        <br>CSV respects the filter above. <b>STIX 2.1</b> exports a bundle for MISP, OpenCTI or any
+        TAXII-fed platform — object IDs are deterministic, so re-importing updates rather than duplicates.
+        <b>Evidence bundle</b> packages captured pages with their hashes and capture times for use in a
+        report; read the README inside it, which sets out plainly what it does and doesn't establish.
+        <br><b>Re-extract</b> re-runs extraction over pages you've already crawled (useful after the
+        extractors improve) — no re-crawling, no network traffic.</div></div>
+    <div class="panel" id="iocs-table"></div>
+  </section>
+
+  <section id="actors">
+    <h2>Inferred identity clusters</h2>
+    <p class="hint">When the same wallet or handle turns up across different pages, that's likely one operator.
+      Umbra clusters those identifiers into an "actor" so you can see everything connected to them.
+      <b>Click a row</b> to see all of its identifiers.</p>
+    <div class="inline" style="margin-bottom:14px">
+      <button class="btn secondary" onclick="resolveActors()">⟳ Rebuild actor links</button>
+      <span class="fhelp">Re-runs the clustering over everything crawled so far.</span></div>
+    <div class="panel" id="actors-table"></div>
+  </section>
+
+  <section id="credentials">
+    <h2>Credentials</h2>
+    <p class="hint">Leaked logins found in breach dumps. Check whether your organisation's addresses are exposed.
+      <b>Passwords are never stored</b> — only a one-way hash, so this is a lookup index, not a password store.</p>
+    <div class="panel"><div class="row">
+      <div><label>Email address</label><input id="c_email" type="text" placeholder="someone@acme.com"></div>
+      <div><label>…or whole domain</label><input id="c_domain" type="text" placeholder="acme.com"></div>
+      <div style="flex:0"><label>&nbsp;</label><button class="btn" onclick="loadCreds()">Look up</button></div>
+    </div></div>
+    <div class="panel" id="creds-table"></div>
+  </section>
+
+  <section id="listings">
+    <h2>Listings</h2>
+    <p class="hint" role="note">Unverified listing candidates extracted from page text. Prices can be account balances or news figures, and product names can be assigned incorrectly. Check the retained source version before using a result in an assessment. Live extraction accuracy has not yet been established.</p>
+    <div class="panel" id="listings-table"></div>
+  </section>
+
+  <section id="watchlists">
+    <h2>Watchlists &amp; alerts</h2>
+    <p class="hint">A watchlist is a standing question. Two sorts: <b>does this appear anywhere?</b>
+      (a domain, an email, a wallet) and <b>did something change?</b> (a marketplace went offline, a vendor's
+      PGP key rotated). Matches become alerts after every crawl, and can be POSTed to a webhook.</p>
+    <div class="panel">
+      <div class="row">
+        <div style="flex:0;min-width:190px"><label>Watch for a…</label>
+          <select id="w_kind" onchange="watchKindChanged()">
+            <option value="domain">domain</option><option value="email">email address</option>
+            <option value="keyword">keyword</option><option value="ioc">indicator value</option>
+            <option value="event">⚡ change / event</option></select></div>
+        <div id="w_value_wrap"><label>Value</label><input id="w_value" type="text" placeholder="acme.com"></div>
+        <div id="w_event_wrap" style="display:none;flex:0;min-width:230px"><label>Which change</label>
+          <select id="w_event_kind">
+            <option value="notable">anything notable</option>
+            <option value="page_unreachable">a service goes offline</option>
+            <option value="page_recovered">a service comes back</option>
+            <option value="indicator_new">a new wallet/key appears</option>
+            <option value="page_changed">page content changes</option>
+            <option value="page_new">a new page appears</option></select></div>
+        <div id="w_host_wrap" style="display:none"><label>Only this service (optional)</label>
+          <input id="w_event_host" type="text" placeholder="market….onion — blank = all"></div>
+        <div><label>Webhook URL (optional)</label><input id="w_webhook" type="text" placeholder="https://hooks.example.com/…"></div>
+        <div style="flex:0"><label>&nbsp;</label><button class="btn" onclick="addWatch()">Add watchlist</button></div>
+      </div>
+      <div class="fhelp" id="w_help">Alerts are raised automatically after each crawl.</div>
+      <div class="inline"><div class="spacer"></div>
+        <button class="btn secondary" onclick="evalWatch()">⚡ Check now</button></div>
+    </div>
+    <div class="panel"><h3>Your watchlists</h3><div id="watch-table"></div></div>
+    <div class="panel"><h3>Alerts raised</h3><div id="alerts-table"></div></div>
+  </section>
+</main>
+
+<div id="modal" onclick="if(event.target.id==='modal')closeModal()"><div class="box" id="modal-box"></div></div>
+<div id="toast"></div>
+
+<script>
+const TABS = ["dashboard","crawl","timeline","sites","search","pages","iocs","actors","credentials","listings","watchlists"];
+const LABELS = { dashboard:"Overview", crawl:"Crawl", timeline:"Timeline", sites:"Sites", search:"Search",
+                 pages:"Pages", iocs:"Indicators", actors:"Actors", credentials:"Credentials",
+                 listings:"Listings", watchlists:"Watchlists" };
+const CARD_DESC = {
+  pages:["Pages","fetched & stored"], queued:["Queued","links found, not yet fetched"],
+  iocs:["Distinct indicators","unique type + value pairs"],
+  actors:["Actors","linked identity clusters"], credentials:["Credentials","leaked logins (hashed)"],
+  listings:["Listings","marketplace items"], watchlists:["Watchlists","things you're monitoring"],
+  alerts:["Alerts","watchlist matches"], unreachable:["Unreachable","services that didn't respond"] };
+let key = sessionStorage.getItem("umbra_session") || localStorage.getItem("umbra_key") || "";
+let pollTimer = null;
+
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function el(id){ return document.getElementById(id); }
+function attributeURL(value){ return encodeURIComponent(value).replace(/'/g,'%27'); }
+function toast(msg){ const t=el("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display="none",5000); }
+function closeModal(){ el("modal").style.display="none"; }
+function openModal(html){ el("modal-box").innerHTML = html +
+  `<div style="text-align:right;margin-top:14px"><button class="btn" onclick="closeModal()">Close</button></div>`;
+  el("modal").style.display="flex"; }
+
+async function req(method, path, body){
+  const opt = { method, headers:{} };
+  if(key) opt.headers["X-API-Key"] = key;
+  if(body){ opt.headers["Content-Type"]="application/json"; opt.body=JSON.stringify(body); }
+  const res = await fetch(path, opt);
+  const text = await res.text();
+  let data=null; try { data = text ? JSON.parse(text) : null; } catch(e) {}
+  if(!res.ok) throw new Error(Array.isArray(data?.detail)
+    ? data.detail.map(e=>e.loc.slice(1).join('.')+': '+e.msg).join('; ')
+    : (data && data.detail) || (res.status+" "+res.statusText));
+  return data;
+}
+const get = p => req("GET", p);
+const post = (p,b) => req("POST", p, b);
+
+function saveKey(){ key = el("apikey").value.trim(); localStorage.setItem("umbra_key", key); ping(); toast("API key saved"); }
+async function ping(){ try { await get("/stats"); el("conn").className="dot ok"; } catch(e){ el("conn").className="dot bad"; } }
+
+function showHelp(){ openModal(`<h2>What Umbra does</h2>
+  <p class="muted">It crawls dark-web (and optionally normal) sites, extracts intelligence from each page,
+  links related activity together, and alerts you when something you're monitoring appears.</p>
+  <dl>
+  <dt>Page</dt><dd>A single page the crawler fetched and stored.</dd>
+  <dt>Indicator (IOC)</dt><dd>A machine-matchable artifact found on a page — a Bitcoin/Monero wallet, email
+    address, PGP key, CVE ID or onion address. These are what you search and alert on.</dd>
+  <dt>Actor</dt><dd>A cluster of identifiers that keep appearing together (e.g. one wallet reused across several
+    vendor pages). Co-occurrence alone does not establish common ownership or identity.</dd>
+  <dt>Credential</dt><dd>An email + password pair found in a breach dump. The password is stored only as a
+    one-way hash, never in plain text.</dd>
+  <dt>Listing</dt><dd>A marketplace item — product and price — parsed from a page.</dd>
+  <dt>Watchlist</dt><dd>A standing query (a domain, email, keyword or indicator). After each crawl, matches
+    become alerts and can be sent to a webhook.</dd>
+  </dl>
+  <p class="muted"><b>Getting started:</b> go to <b>Crawl</b>, paste a URL, tick “Allow normal websites” if it
+  isn’t a <code>.onion</code> address, and press Start.</p>`); }
+
+// --- navigation ---
+function buildNav(){
+  el("nav").innerHTML = TABS.map(t=>`<a data-tab="${t}" onclick="show('${t}')">${LABELS[t]}</a>`).join("");
+}
+function show(tab){
+  TABS.forEach(t=>{ el(t).classList.toggle("active", t===tab);
+    document.querySelector(`nav a[data-tab="${t}"]`).classList.toggle("active", t===tab); });
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+  const loaders = { dashboard:loadDashboard, pages:loadPages, iocs:loadIocs, actors:loadActors,
+                    listings:loadListings, watchlists:loadWatch, crawl:pollCrawl, sites:loadSites,
+                    search:loadCoverage, timeline:()=>loadTimeline("") };
+  if(tab==="crawl" && !PACKS.length) loadPacks();
+  if(loaders[tab]) loaders[tab]();
+  if(tab==="dashboard") pollTimer=setInterval(loadDashboard, 5000);
+  if(tab==="crawl") pollTimer=setInterval(pollCrawl, 2000);
+}
+
+// `cap` = the row limit the request asked for (and optionally `total` when the API
+// reports it). Every list here is capped, and a capped list that looks complete is
+// a lie by omission: the Indicators view once showed 200 wallets and contact
+// addresses and not one of the 48 PGP keys, which had simply fallen off the end.
+function table(cols, rows, rowFn, emptyMsg, cap){
+  if(!rows || !rows.length) return `<div class="empty">${esc(emptyMsg||"Nothing here yet.")}</div>`;
+  let note = "";
+  if(cap && rows.length >= (cap.cap||cap)){
+    const n = cap.cap || cap, total = cap.total;
+    note = `<div class="fhelp" style="margin-top:8px">⚠ Showing the first ${n}${total?` of ${total}`:""} —
+            narrow the filter to see the rest.</div>`;
+  }
+  return `<div style="overflow:auto"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(rowFn).join("")}</tbody></table></div>${note}`;
+}
+function bars(items, emptyMsg){
+  if(!items || !items.length) return `<div class="empty">${esc(emptyMsg)}</div>`;
+  const max = Math.max(...items.map(i=>i.count));
+  return items.map(i=>`<div class="brow"><div class="t"><span title="${esc(i.name)}">${esc(i.name)}</span><span class="muted">${i.count}</span></div>
+    <div class="bar"><span style="width:${Math.round(i.count/max*100)}%"></span></div></div>`).join("");
+}
+function pageCell(x){ return `<div class="ttl">${esc(x.title||"(untitled)")}</div><div class="sub">${esc(x.url)}</div>`; }
+
+// --- dashboard ---
+// The counts below look exactly the same whether collection is running or died
+// an hour ago, so this banner is the only thing on the page that can tell you.
+const HEALTH_STYLE = {
+  ok:      ["#3ba55d", "✅", "Collecting"],
+  idle:    ["#8a8f98", "⏸️", "Idle"],
+  stalled: ["#e0a030", "⚠️", "Stalled"],
+  stale:   ["#e0a030", "⏱️", "Stale — nothing collecting"],
+  failing: ["#e05252", "🛑", "Failing"],
+  unknown: ["#8a8f98", "❔", "No passes recorded"],
+};
+function showHealth(h){
+  if(!h){ el("collection-health").innerHTML = ""; return; }
+  const [colour, icon, title] = HEALTH_STYLE[h.status] || HEALTH_STYLE.unknown;
+  const quiet = h.status === "ok" || h.status === "idle";
+  const spark = (h.recent_pages||[]).slice().reverse()
+    .map(n => `<span title="${n} page(s)" style="display:inline-block;width:6px;margin-right:2px;
+       background:${n>0?colour:"#555"};height:${Math.max(3, Math.min(18, n===0?3:4+Math.log10(n+1)*7))}px"></span>`).join("");
+  el("collection-health").innerHTML = `
+    <div class="panel" style="margin-bottom:14px;border-left:4px solid ${colour}
+         ${quiet?"":";background:rgba(224,160,48,.07)"}">
+      <div class="inline" style="justify-content:space-between;align-items:flex-start">
+        <div><b style="color:${colour}">${icon} ${title}</b>
+          <div class="fhelp" style="margin-top:4px">${esc(h.detail||"")}</div></div>
+        <div style="text-align:right"><div style="height:20px">${spark}</div>
+          <div class="fhelp">last ${(h.recent_pages||[]).length} pass(es)</div></div>
+      </div>
+    </div>`;
+}
+async function loadDashboard(){
+  try {
+    const o = await get("/overview");
+    const c = {...o.counts, iocs:o.counts.unique_iocs ?? o.counts.iocs};
+    showHealth(o.collection);
+    el("stats").innerHTML = Object.keys(CARD_DESC).map(k=>{
+      const [label,desc] = CARD_DESC[k];
+      return `<div class="card"><div class="n">${c[k]||0}</div><div class="l">${label}</div><div class="d">${desc}</div></div>`;
+    }).join("");
+
+    el("getting-started").innerHTML = (c.pages === 0) ? `<div class="panel">
+      <h3>Getting started</h3><ol class="steps">
+      <li>Open the <b>Crawl</b> tab and paste a URL to start from.</li>
+      <li>Tick <b>Allow normal websites</b> if it isn't a <code>.onion</code> address, then press <b>Start crawl</b>.</li>
+      <li>Come back here — pages, indicators and actors will appear as they're found.</li>
+      <li>Add a <b>Watchlist</b> (e.g. your company domain) to get alerted automatically.</li>
+      </ol></div>` : "";
+
+    el("b-types").innerHTML   = bars(o.pages_by_type, "No page types yet — enable AI page analysis when crawling to classify pages.");
+    el("b-threats").innerHTML = bars(o.pages_by_threat, "No threat categories yet — these come from AI page analysis.");
+    el("b-hosts").innerHTML   = bars(o.top_hosts, "No sites crawled yet.");
+    el("b-iocs").innerHTML    = bars(o.top_ioc_types, "No indicators extracted yet.");
+
+    el("d-recent").innerHTML = table(["Page","Site","Type"], o.recent_pages,
+      x=>`<tr class="clickable" onclick="openPage('${attributeURL(x.url)}')"><td>${pageCell(x)}</td>
+          <td>${esc(x.hostname||"")}</td><td>${x.page_type?`<span class="chip">${esc(x.page_type)}</span>`:'<span class="muted">—</span>'}</td></tr>`,
+      "Nothing crawled yet — start a crawl to populate this.");
+
+    el("d-alerts").innerHTML = table(["Watchlist","Matched","On page"], o.recent_alerts,
+      a=>`<tr><td>${esc(a.watchlist)} <span class="muted">(${esc(a.kind)})</span></td>
+          <td class="mono">${esc(a.matched_value)}</td><td class="sub">${esc(a.page_url)}</td></tr>`,
+      "No alerts yet — add a watchlist to be told when something you care about appears.");
+    el("conn").className="dot ok";
+  } catch(e){ el("conn").className="dot bad"; toast(e.message); }
+}
+
+// --- crawl ---
+async function startCrawl(){
+  const seeds = el("seeds").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(!seeds.length){ toast("Add at least one URL to start from"); return; }
+  // Only send limits that were actually filled in — sending 0 for a blank box
+  // would otherwise mean "no limit" and start an unbounded crawl.
+  const payload = { seeds, focus:el("focus").value,
+                    allow_clearnet:el("allow_clearnet").checked, llm:el("llm").checked,
+                    pin:el("pin").checked, strict_scope:el("strict_scope").checked,
+                    allowed_hosts:el("allowed_hosts").value.split(',').map(x=>x.trim()).filter(Boolean),
+                    store_html:el("store_html").checked };
+  const mp = el("max_pages").value.trim(), md = el("max_depth").value.trim();
+  if(mp !== "") payload.max_pages = +mp;
+  if(md !== "") payload.max_depth = +md;
+  try {
+    await post("/admin/crawl", payload);
+    toast("Crawl started"); pollCrawl();
+  } catch(e){ toast(e.message); }
+}
+async function stopCrawl(){
+  try { await post("/admin/crawl/stop"); toast("Stopping — workers will finish their current page"); }
+  catch(e){ toast(e.message); }
+}
+async function pollCrawl(){
+  try {
+    const cs = await get("/admin/crawl-status");
+    const o = await get("/overview");
+    const sb = el("stopbtn"); if(sb) sb.style.display = cs.running ? "" : "none";
+    let h;
+    if(cs.running){
+      const L = cs.live || {};
+      h = `<div class="running">● Crawling now…</div><div class="muted" style="margin-top:6px">
+           Started from ${cs.seeds} seed URL(s). This page updates every couple of seconds.</div>
+           <div style="margin-top:8px">So far this run: <b>${L.crawled||0}</b> page(s) fetched ·
+           <b>${L.iocs||0}</b> indicator(s) · ${L.dead||0} unreachable · ${L.blocked||0} blocked.</div>`;
+    } else if(cs.stats){
+      const s = cs.stats;
+      h = `<div>✅ <b>Last crawl finished.</b></div><div class="muted" style="margin-top:6px">
+           Stored <b>${s.crawled}</b> page(s) — ${s.changed} with new or changed content — and extracted
+           <b>${s.iocs}</b> indicator(s). ${s.blocked} blocked by policy, ${s.dead} unreachable.<br>
+           Stopped because: ${esc((s.stop_reason||'completed').replaceAll('_',' '))}.</div>`;
+    } else if(o.collection && o.collection.in_progress){
+      h = `<div class="running">● Background worker is crawling</div><div class="muted" style="margin-top:6px">
+           A scheduled pass is in progress (see the health banner on Overview). Crawls started from this page
+           run alongside it.</div>`;
+    } else { h = `<div class="idle">No crawl started from this page yet. ${o.collection && o.collection.status==="stale"
+           ? '<b>The background worker is not running</b> — start it with run-local.ps1, or start a crawl here.'
+           : 'Queue a pack or paste targets above and press Start.'}</div>`; }
+    if(cs.error) h += `<div style="color:var(--bad);margin-top:10px">Error: ${esc(cs.error)}</div>`;
+    h += `<div class="muted" style="margin-top:10px">Database: <b>${o.counts.pages}</b> page(s) fetched ·
+          <b>${o.counts.queued}</b> link(s) queued · <b>${o.counts.iocs}</b> indicator(s) extracted.</div>`;
+    el("crawl-status").innerHTML = h;
+  } catch(e){ el("crawl-status").innerHTML = `<span class="idle">Enter an admin API key above to start crawls.</span>`; }
+}
+
+// --- search ---
+async function runSearch(){
+  const q = el("q").value.trim();
+  if(!q){ toast("Type something to search for"); return; }
+  try {
+    const r = await get("/search?q="+encodeURIComponent(q)+"&k=20&mode="+el("search_mode").value);
+    el("search-results").innerHTML = `<div class="panel">` + table(["Match","Page","Summary"], r.results,
+      x=>`<tr class="clickable" onclick="openPage('${attributeURL(x.url)}')">
+          <td>${(x.score*100).toFixed(0)}%</td><td>${pageCell(x)}</td>
+          <td class="muted">${esc((x.summary||"").slice(0,140))}</td></tr>`,
+      "No matches. Try different wording, or crawl more pages first.") + `</div>`;
+    if(r.warning) toast(r.warning);
+    if(r.coverage) showCoverage(r.coverage);
+  } catch(e){ toast(e.message); }
+}
+function showCoverage(c){
+  const stale = c.stale
+    ? ` <b style="color:var(--warn,#e0a030)">${c.stale} page(s) indexed by an older model — click Re-embed.</b>`
+    : "";
+  el("emb-status").innerHTML =
+    `Index: <b>${esc(c.embedder)}</b> (dim ${c.dim}) — ${c.searchable_now} of ${c.pages_with_content} `
+    + `stored page(s) searchable.` + stale;
+}
+async function loadCoverage(){
+  try { showCoverage(await get("/embeddings/coverage")); }
+  catch(e){ el("emb-status").textContent = "Search index status unavailable."; }
+}
+async function reembed(){
+  if(!confirm("Rebuild the search index over all stored pages? No re-crawling; may take a moment.")) return;
+  try {
+    toast("Re-embedding stored pages…");
+    const r = await post("/admin/reembed");
+    toast(`Re-embedded ${r.pages} page(s) with ${r.embedder}`);
+    loadCoverage();
+  } catch(e){ toast(e.message); }
+}
+
+// --- pages ---
+async function loadPages(){
+  const p = new URLSearchParams(); const add=(k,v)=>{ if(v) p.set(k,v); };
+  add("host",el("f_host").value); add("page_type",el("f_ptype").value);
+  add("threat",el("f_threat").value); add("status",el("f_status").value); p.set("limit","100");
+  try {
+    const r = await get("/pages?"+p);
+    el("pages-table").innerHTML = table(["Page","Site","Type","Threat","Status"], r.pages,
+      x=>`<tr class="clickable" onclick="openPage('${attributeURL(x.url)}')">
+        <td>${pageCell(x)}</td><td>${esc(x.hostname||"")}</td>
+        <td>${x.page_type?`<span class="chip">${esc(x.page_type)}</span>`:'<span class="muted">—</span>'}</td>
+        <td>${x.threat_category?esc(x.threat_category):'<span class="muted">—</span>'}</td>
+        <td>${esc(x.status)}</td></tr>`,
+      "No pages match. Clear the filters, or run a crawl to collect some.");
+  } catch(e){ toast(e.message); }
+}
+async function openPage(encUrl){
+  encUrl = String(encUrl).replace(/'/g,'%27');
+  try {
+    const x = await get("/page?url="+encUrl);
+    openModal(`<h2>${esc(x.title||"(untitled page)")}</h2>
+      <a class="link" href="${esc(x.url)}" target="_blank" rel="noreferrer">${esc(x.url)}</a>
+      <p class="muted" style="margin-top:6px">${esc(x.hostname||"")} · ${esc(x.status)}
+        ${x.page_type?" · "+esc(x.page_type):""}${x.threat_category?" · "+esc(x.threat_category):""}</p>
+      ${x.summary?`<p>${esc(x.summary)}</p>`:""}
+      <h3 style="margin-top:14px">Indicators found on this page</h3>
+      <div>${(x.iocs||[]).length ? x.iocs.map(i=>`<span class="tag" title="${esc(i.context||'Source snippet unavailable')}">${esc(i.type)}: ${esc(i.value)}</span>`).join("")
+             : '<span class="muted">None.</span>'}</div>
+      <h3 style="margin-top:16px">Stored content</h3>
+      <pre>${esc((x.content||"(content not stored for this page)").slice(0,4000))}</pre>
+      <button class="btn" onclick="pageVersions('${encUrl}')">Versions, compare &amp; save to case</button>`);
+  } catch(e){ toast(e.message); }
+}
+
+// --- sites (targeting view) ---
+async function loadSites(){
+  try {
+    const r = await get("/sites?limit=300");
+    el("sites-table").innerHTML = table(["Site","Fetched","Queued","Unreachable","Indicators"], r.sites,
+      x=>`<tr class="clickable" onclick="crawlSite(decodeURIComponent('${attributeURL(x.host)}'))"><td class="mono">${x.pinned?'<span title="Pinned target — the crawl stays on this host">📌 </span>':''}${esc(x.host)}</td>
+          <td>${x.crawled}</td><td>${x.queued}</td><td>${x.unreachable}</td><td>${x.iocs}</td></tr>`,
+      "No sites yet — run a crawl and the services it finds will be listed here.", {cap:300, total:r.total});
+  } catch(e){ toast(e.message); }
+}
+function crawlSite(host){
+  el("seeds").value = "http://" + host + "/";
+  el("max_pages").value = 20; el("max_depth").value = 2;
+  show("crawl");
+  toast("Loaded " + host + " — review the limits, then press Start crawl");
+}
+async function clearQueue(){
+  try { const r = await req("DELETE","/admin/queue");
+    toast("Removed "+r.removed+" queued link(s)"); loadSites(); } catch(e){ toast(e.message); }
+}
+async function reprocess(){
+  try {
+    toast("Re-extracting from stored pages…");
+    const r = await post("/admin/reprocess");
+    toast(`Re-extracted ${r.records} record(s) from ${r.pages} page(s)`);
+    loadIocs();
+  } catch(e){ toast(e.message); }
+}
+// fetch + blob rather than window.location, so the API key header is sent
+async function download(path, filename, label){
+  try {
+    const opt = { headers:{} }; if(key) opt.headers["X-API-Key"] = key;
+    const res = await fetch(path, opt);
+    if(!res.ok){
+      let detail = res.status+" "+res.statusText;
+      try { const j = await res.json(); if(j.detail) detail = j.detail; } catch(_){}
+      throw new Error(detail);
+    }
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    toast(label+" downloaded");
+  } catch(e){ toast(e.message); }
+}
+function exportIocs(){
+  const t = el("ioc_type").value.trim();
+  return download("/export/iocs.csv" + (t ? "?type="+encodeURIComponent(t) : ""),
+                  "umbra-indicators.csv", "CSV");
+}
+function exportStix(){
+  const t = el("ioc_type").value.trim();
+  const q = t === "actor" ? "?attribution_only=true" : (t ? "?type="+encodeURIComponent(t) : "");
+  return download("/export/stix"+q+(q?"&":"?")+"download=true", "umbra-stix.json", "STIX bundle");
+}
+function exportEvidence(){
+  const host = prompt("Evidence bundle for which service? (blank = every stored page)","");
+  if(host === null) return;
+  const q = host.trim() ? "?host="+encodeURIComponent(host.trim()) : "";
+  return download("/export/evidence.zip"+q, "umbra-evidence.zip", "Evidence bundle");
+}
+
+// --- source packs ---
+let PACKS = [];
+async function loadPacks(){
+  try {
+    PACKS = (await get("/sources")).packs;
+    el("pack_name").innerHTML = PACKS.length
+      ? PACKS.map(p=>`<option value="${esc(p.name)}">${esc(p.name)} — ${p.count} source(s)</option>`).join("")
+      : `<option value="">(no packs installed)</option>`;
+    packChanged();
+  } catch(e){ el("pack_desc").textContent = "Could not load source packs."; }
+}
+function packChanged(){
+  const p = PACKS.find(x=>x.name===el("pack_name").value);
+  el("pack_desc").innerHTML = p
+    ? `<b>${esc(p.category)}</b> · v${esc(p.version)} · ${p.count} source(s) · ${esc(p.origin)}<br>${esc(p.description)}`
+    : "No source packs installed yet — generate some with <span class='mono'>umbra sources --generate</span>.";
+}
+async function seedPack(){
+  const name = el("pack_name").value;
+  if(!name){ toast("No pack selected"); return; }
+  try {
+    const r = await post("/admin/seed-pack", {pack:name});
+    toast(`Queued ${r.queued} of ${r.sources} source(s) from ${name}`);
+  } catch(e){ toast(e.message); }
+}
+
+// --- timeline / liveness ---
+const EVENT_ICON = { page_new:"🆕", page_changed:"✏️", page_unreachable:"⚠️",
+                     page_recovered:"✅", page_dead:"💀", indicator_new:"🔑" };
+// The Timeline tab's buttons select a view, so the highlighted one must be the
+// view on screen. It used to be fixed styling: "All events" stayed highlighted
+// whichever filter was active.
+function markTimelineView(onclickCall){
+  document.querySelectorAll('#timeline button[onclick^="load"]').forEach(b => {
+    b.className = b.getAttribute("onclick") === onclickCall ? "btn" : "btn secondary";
+  });
+}
+async function loadTimeline(filter){
+  markTimelineView(`loadTimeline('${filter||""}')`);
+  const p = new URLSearchParams({limit:"200"});
+  if(filter==="notable") p.set("notable","true"); else if(filter) p.set("kind",filter);
+  try {
+    const r = await get("/timeline?"+p);
+    el("timeline-table").innerHTML = table(["When","Event","What happened"], r.events,
+      x=>`<tr${x.page_url?` class="clickable" onclick="openPage('${attributeURL(x.page_url)}')"`:""}>
+          <td class="mono muted">${esc((x.at||"").slice(0,19).replace("T"," "))}</td>
+          <td><span class="chip">${EVENT_ICON[x.kind]||""} ${esc(x.label)}</span></td>
+          <td>${esc(x.summary)}${x.detail?`<div class="mono muted" style="font-size:11px">${esc(x.detail.slice(0,90))}</div>`:""}</td></tr>`,
+      "No events yet. The timeline fills in when a recrawl finds something different — "
+      + "crawl the same site twice to see it work.", 200);
+  } catch(e){ toast(e.message); }
+}
+async function loadRuns(){
+  markTimelineView("loadRuns()");
+  try {
+    const r = await get("/runs?limit=50");
+    showHealth(r.health);
+    el("timeline-table").innerHTML = table(
+      ["Started","Status","Pages","Dead","Indicators","Events","Waiting"], r.runs,
+      x=>`<tr${x.stalled||x.status==="error"?' style="background:rgba(224,82,82,.08)"':""}>
+          <td class="mono muted">${esc((x.started_at||"").slice(0,19).replace("T"," "))}</td>
+          <td>${x.status==="error" ? '<span style="color:#e05252">error</span>'
+                : x.status==="abandoned" ? '<span class="muted">interrupted</span>'
+                : x.stalled ? '<span style="color:#e0a030">stalled</span>'
+                : esc(x.status)}${x.duration_s!=null?` <span class="fhelp">${x.duration_s}s</span>`:""}</td>
+          <td><b>${x.pages_crawled}</b></td><td class="muted">${x.pages_dead}</td>
+          <td>${x.iocs_found}</td><td>${x.events_emitted}</td>
+          <td class="muted">${x.work_waiting}</td></tr>`,
+      "No collection passes recorded yet. Start the worker (umbra worker) or run a crawl.", 50);
+  } catch(e){ toast(e.message); }
+}
+async function rescoreQueue(){
+  try {
+    const r = await post("/admin/rescore-queue");
+    toast(`Re-prioritised ${r.rescored} of ${r.queued} queued link(s)`);
+    loadSites();
+  } catch(e){ toast(e.message); }
+}
+async function backfillTimeline(){
+  try {
+    const r = await post("/admin/backfill-timeline");
+    toast(r.events ? `Reconstructed ${r.events} historical event(s)` : "Nothing new to reconstruct");
+    loadTimeline("");
+  } catch(e){ toast(e.message); }
+}
+async function loadLiveness(){
+  markTimelineView("loadLiveness()");
+  try {
+    const r = await get("/liveness");
+    const dot = s => s==="up" ? '<span style="color:#3ba55d">● up</span>'
+                  : s==="down" ? '<span style="color:#e05252">● went dark</span>'
+                  : s==="never" ? '<span class="muted" title="Never answered on any attempt — not an outage">● never answered</span>'
+                  : '<span class="muted">● unknown</span>';
+    el("timeline-table").innerHTML = table(["Status","Service","Pages live","Last fetched","Offline since"], r.hosts,
+      x=>`<tr><td>${dot(x.state)}</td><td class="mono">${esc(x.host.slice(0,34))}…</td>
+          <td>${x.live}/${x.known}</td>
+          <td class="muted">${esc((x.last_fetch||"—").slice(0,19).replace("T"," "))}</td>
+          <td class="muted">${esc((x.offline_since||"—").slice(0,19).replace("T"," "))}</td></tr>`,
+      "No services seen yet.", 200);
+  } catch(e){ toast(e.message); }
+}
+
+// --- iocs / actors / creds / listings ---
+function iocFilter(t){ el("ioc_type").value = t; loadIocs(); }
+// Opening the tab fires a load; clicking a filter fires another. Whichever
+// response arrives *last* used to win the table — so a slow unfiltered request
+// could overwrite the filtered view the user just asked for. Only the newest
+// request is allowed to render.
+let iocsRequest = 0;
+async function loadIocs(){
+  const t = el("ioc_type").value.trim();
+  const mine = ++iocsRequest;
+  try {
+    const r = await get("/iocs?limit=200&distinct=true"+(t?"&type="+encodeURIComponent(t):""));
+    if(mine !== iocsRequest) return;  // superseded by a newer filter
+    el("iocs-table").innerHTML = table(["Type","Value","Seen on"], r.iocs,
+      x=>`<tr><td><span class="chip">${esc(x.type)}</span></td><td class="mono">${esc(x.value)}</td>
+          <td class="sub">${x.pages>1?`<b>${x.pages} pages</b> · `:""}${esc(x.page_url)}</td></tr>`,
+      "No indicators yet — crawl some pages and they'll be extracted automatically.", 200);
+  } catch(e){ toast(e.message); }
+}
+async function loadActors(){
+  try {
+    const r = await get("/actors?limit=200");
+    el("actors-table").innerHTML = table(["Actor","Seen on",""], r.actors,
+      x=>`<tr class="clickable" onclick="openActor(${x.id})"><td class="mono">${esc(x.label)}</td>
+          <td>${x.page_count} page(s)</td><td class="muted">view identifiers →</td></tr>`,
+      "No actors yet. Actors appear once the same wallet or handle shows up on more than one page — crawl more, then press “Rebuild actor links”.");
+  } catch(e){ toast(e.message); }
+}
+async function openActor(id){
+  try {
+    const a = await get("/actor/"+id);
+    openModal(`<h2>Actor: ${esc(a.label)}</h2>
+      <p class="muted">This inferred cluster reaches ${a.page_count} page(s). Co-occurrence alone does not
+      establish common ownership. Inspect and assess individual links in Review links.</p>
+      <div>${a.identifiers.map(i=>`<span class="tag">${esc(i.type)}: ${esc(i.value)}</span>`).join("")}</div>`);
+  } catch(e){ toast(e.message); }
+}
+async function resolveActors(){ try { const r=await post("/admin/resolve-actors");
+  toast("Linked "+r.actors+" actor(s) from "+r.identifiers+" identifiers"); loadActors(); } catch(e){ toast(e.message); } }
+async function loadCreds(){
+  const p = new URLSearchParams();
+  if(el("c_email").value) p.set("email",el("c_email").value);
+  if(el("c_domain").value) p.set("domain",el("c_domain").value);
+  if(![...p].length){ toast("Enter an email address or a domain to look up"); return; }
+  try {
+    const r = await get("/credentials?"+p);
+    el("creds-table").innerHTML = table(["Email","Domain","Found in"], r.credentials,
+      x=>`<tr><td class="mono">${esc(x.email)}</td><td>${esc(x.domain||"")}</td><td class="sub">${esc(x.page_url)}</td></tr>`,
+      "No exposed credentials found for that search.");
+  } catch(e){ toast(e.message); }
+}
+async function loadListings(){
+  try {
+    const r = await get("/listings?limit=200");
+    el("listings-table").innerHTML = table(["Item","Price","Found on"], r.listings,
+      x=>`<tr><td>${esc(x.product||"(unnamed)")}${x.context?`<details><summary>Source snippet</summary><p>${esc(x.context)}</p><span class="muted">Price-token heuristic; review whether this is an actual sale.</span></details>`:''}</td>
+          <td>${x.price!=null?esc(x.price)+" "+esc(x.currency||""):'<span class="muted">—</span>'}</td>
+          <td class="sub">${esc(x.page_url)}</td></tr>`,
+      "No listings yet — these are parsed from marketplace pages as you crawl them.");
+  } catch(e){ toast(e.message); }
+}
+
+// --- watchlists ---
+async function loadWatch(){
+  try {
+    const w = await get("/watchlists");
+    el("watch-table").innerHTML = table(["Watching for","Value","Webhook",""], w.watchlists,
+      x=>`<tr><td>${esc(x.name)} <span class="muted">(${esc(x.kind)})</span></td><td class="mono">${esc(x.value)}</td>
+          <td class="sub">${x.webhook_url?esc(x.webhook_url):'<span class="muted">— none</span>'}</td>
+          <td><button class="btn secondary" onclick="delWatch(${x.id})">remove</button></td></tr>`,
+      "No watchlists yet. Add one above and you'll be alerted when it appears in crawled pages.");
+    const a = await get("/alerts?limit=100");
+    el("alerts-table").innerHTML = table(["Watchlist","Matched","On page","Sent"], a.alerts,
+      r=>`<tr><td>${esc(r.watchlist||("#"+r.watchlist_id))}</td><td class="mono">${esc(r.matched_value)}</td>
+          <td class="sub">${esc(r.page_url)}</td><td>${r.delivered?"✓":"—"}</td></tr>`,
+      "No alerts raised yet.");
+  } catch(e){ toast(e.message); }
+}
+const WATCH_HELP = {
+  domain:  "Fires when any page on this hidden service is crawled.",
+  email:   "Fires when this address turns up in a leaked credential dump.",
+  keyword: "Fires when the text appears in a page's content, title or summary.",
+  ioc:     "Fires when this exact wallet, key or address is seen anywhere.",
+  event:   "Fires each time it happens — a service going down, recovering, and going down again "
+         + "is three alerts, not one. Leave the service blank to watch everything.",
+};
+function watchKindChanged(){
+  const isEvent = el("w_kind").value === "event";
+  el("w_value_wrap").style.display  = isEvent ? "none" : "";
+  el("w_event_wrap").style.display  = isEvent ? "" : "none";
+  el("w_host_wrap").style.display   = isEvent ? "" : "none";
+  el("w_help").textContent = WATCH_HELP[el("w_kind").value] || "";
+}
+async function addWatch(){
+  const kind = el("w_kind").value;
+  let value;
+  if(kind === "event"){
+    const host = el("w_event_host").value.trim();
+    value = el("w_event_kind").value + (host ? "@"+host : "");
+  } else {
+    value = el("w_value").value.trim();
+    if(!value){ toast("Enter a value to watch for"); return; }
+  }
+  try { await post("/watchlists", { kind, value, webhook_url:el("w_webhook").value.trim()||null });
+    el("w_value").value=""; el("w_webhook").value=""; el("w_event_host").value="";
+    toast("Watchlist added"); loadWatch(); } catch(e){ toast(e.message); }
+}
+async function delWatch(id){ try { await req("DELETE","/watchlists/"+id); loadWatch(); } catch(e){ toast(e.message); } }
+async function evalWatch(){ try { const r=await post("/watchlists/evaluate");
+  toast(r.new_alerts+" new alert(s) raised"); loadWatch(); } catch(e){ toast(e.message); } }
+
+// --- init ---
+el("apikey").value = key;
+buildNav(); show("dashboard"); ping(); watchKindChanged();
+</script>
+<script src="/investigations.js"></script>
+<script src="/workspace.js"></script>
+<script src="/workflow.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+[
+  {"id":"wallet", "description":"Explicit BTC donation address", "html":"Donate BTC 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", "indicators":[["btc","1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"]],"listings":[]},
+  {"id":"eth", "description":"Ethereum-shaped candidate", "html":"Wallet: 0x1234567890123456789012345678901234567890", "indicators":[["eth","0x1234567890123456789012345678901234567890"]],"listings":[]},
+  {"id":"vulnerability", "description":"CVE mention", "html":"Advisory for CVE-2024-12345", "indicators":[["cve","CVE-2024-12345"]],"listings":[]},
+  {"id":"vendor", "description":"Explicit vendor label", "html":"Vendor: ExampleSeller", "indicators":[["handle","ExampleSeller"]],"listings":[]},
+  {"id":"email", "description":"Email mention without attribution", "html":"Contact analyst@example.org", "indicators":[["email","analyst@example.org"]],"listings":[]},
+  {"id":"script", "description":"Script contents must not create findings", "html":"<script>const key='0x1234567890123456789012345678901234567890'; let price='$999';</script><p>Welcome</p>", "indicators":[],"listings":[]},
+  {"id":"usd", "description":"Single product and asking price", "html":"<p>Notebook $12</p>", "indicators":[],"listings":[["USD",12]]},
+  {"id":"eur", "description":"Euro asking price", "html":"<p>Notebook €15.50</p>", "indicators":[],"listings":[["EUR",15.5]]},
+  {"id":"gbp", "description":"Pounds asking price", "html":"<p>Notebook £9</p>", "indicators":[],"listings":[["GBP",9]]},
+  {"id":"range", "description":"Denomination range is not asking price", "html":"Cards with credit from 1000 to 5000 USD. Price $90", "indicators":[],"listings":[["USD",90]]},
+  {"id":"news", "description":"Negative: news figure is not a listing", "html":"<article>News report: the project received $25000 in funding.</article>", "indicators":[],"listings":[]},
+  {"id":"balance", "description":"Negative: account balance is not asking price", "html":"<p>Account balance: $240.00</p>", "indicators":[],"listings":[]},
+  {"id":"neutral", "description":"No extractable findings", "html":"<p>Welcome to our documentation.</p>", "indicators":[],"listings":[]},
+  {"id":"duplicate", "description":"Repeated identical identifier deduplicates", "html":"CVE-2024-12345 CVE-2024-12345", "indicators":[["cve","CVE-2024-12345"]],"listings":[]}
+]

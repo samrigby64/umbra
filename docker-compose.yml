@@ -1,0 +1,73 @@
+name: umbra
+
+# Shared environment: Postgres for storage, the Tor sidecar for fetching.
+x-umbra-env: &umbra-env
+  UMBRA_DATABASE_URL: postgresql+asyncpg://umbra:umbra@postgres:5432/umbra
+  UMBRA_TOR_SOCKS_HOST: tor
+  UMBRA_TOR_SOCKS_PORT: "9050"
+  UMBRA_LOG_LEVEL: INFO
+  # Uncomment to enable retention (worker purges each pass):
+  # UMBRA_RETENTION_DAYS: "90"
+
+services:
+  tor:
+    build: ./deploy/tor
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16   # plain postgres works too; this is pgvector-ready
+    environment:
+      POSTGRES_USER: umbra
+      POSTGRES_PASSWORD: umbra          # change me in production
+      POSTGRES_DB: umbra
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umbra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # One-shot: create tables, then exit. api/worker wait for this to finish.
+  init:
+    build: .
+    image: umbra-intel:local
+    command: ["init-db"]
+    environment: *umbra-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: umbra-intel:local
+    command: ["serve", "--host", "0.0.0.0", "--port", "8000"]
+    environment: *umbra-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    image: umbra-intel:local
+    command: ["worker", "--seed-file", "/seeds/seeds.txt", "--interval", "600"]
+    environment: *umbra-env
+    volumes:
+      - ./deploy/seeds.txt:/seeds/seeds.txt:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      tor:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  pgdata:

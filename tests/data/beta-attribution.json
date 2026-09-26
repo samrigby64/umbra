@@ -1,0 +1,9 @@
+[
+  {"id":"separate-rows","description":"Different products at the same price","html":"<table><tr><td>Notebook</td><td>$12</td></tr><tr><td>Pencil</td><td>$12</td></tr></table>","indicators":[],"listings":[["USD",12]],"listing_products":[["Notebook","USD",12],["Pencil","USD",12]]},
+  {"id":"different-prices","description":"Each row retains its own product","html":"<table><tr><td>Notebook</td><td>$12</td></tr><tr><td>Pencil</td><td>$3</td></tr></table>","indicators":[],"listings":[["USD",12],["USD",3]],"listing_products":[["Notebook","USD",12],["Pencil","USD",3]]},
+  {"id":"price-first","description":"Price precedes product; should not infer a preceding product","html":"<div class='product'>$12 Notebook</div>","indicators":[],"listings":[["USD",12]],"listing_products":[["Notebook","USD",12]]},
+  {"id":"news","description":"Financial news is not an offer","html":"<p>The charity raised $25000 for its annual event.</p>","indicators":[],"listings":[],"listing_products":[]},
+  {"id":"balance","description":"Account balance is not an asking price","html":"<p>Your account balance is $240.</p>","indicators":[],"listings":[],"listing_products":[]},
+  {"id":"script","description":"Hidden script prices are not visible offers","html":"<script>var price='$99';</script><p>No offers today.</p>","indicators":[],"listings":[],"listing_products":[]},
+  {"id":"cards","description":"Separate product containers","html":"<div class='product'>Notebook $12</div><div class='product'>Pencil $3</div>","indicators":[],"listings":[["USD",12],["USD",3]],"listing_products":[["Notebook","USD",12],["Pencil","USD",3]]}
+]

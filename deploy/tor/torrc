@@ -1,0 +1,4 @@
+# Expose SOCKS to other containers on the compose network (not the host).
+SocksPort 0.0.0.0:9050
+DataDirectory /var/lib/tor
+Log notice stdout

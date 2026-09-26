@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.env
+*.db
+*.sqlite
+.pytest_cache/
+.ruff_cache/
+beta-support-contact.txt
+.env.beta-setup.tmp
+
+# SQLite side files (the *.db rule above does not cover these)
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Local operational artefacts: logs, pids, backups and keys
+*.log
+*.pid
+*.ubak
+*.key
+backups/
+
+# Collected material and private working files. reports/ holds live-test output
+# and captured pages; private/ holds the real source packs and internal beta docs.
+reports/
+private/

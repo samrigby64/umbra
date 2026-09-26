@@ -1,0 +1,14 @@
+# Compliance blocklist — operator-supplied category:regex rules (one per line).
+#
+# When a page's URL or text matches any rule, its body is DISCARDED at ingest;
+# only the URL, a content hash, and the matched category are retained so the
+# event can be audited without the material being stored.
+#
+# This file intentionally ships with only benign, illustrative rules. Add the
+# categories your jurisdiction and policy require BEFORE any production crawl,
+# and take legal advice on what you are permitted to process and store.
+#
+# Format:  <category>: <python regex>
+
+malware-sample: \b(ransomware builder|stealer log dump)\b
+placeholder-illegal-category: \bthis_is_a_placeholder_pattern_to_be_replaced\b

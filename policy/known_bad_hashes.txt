@@ -1,0 +1,23 @@
+# Known-bad content hashes — one lowercase SHA-256 per line, '#' for comments.
+#
+# Any fetched page whose body hash matches a line here is BLOCKED at ingest:
+# the content is never written to the database, only the URL, the hash and a
+# "known-bad-hash" flag are kept so the event can be audited.
+#
+# ---------------------------------------------------------------------------
+# THIS FILE IS EMPTY, WHICH MEANS IT CURRENTLY BLOCKS NOTHING.
+#
+# It is wired up and working — adding a hash below takes effect on the next
+# crawl with no other configuration. But an empty list provides no protection.
+#
+# To make it meaningful you need real hash sets, which are distributed under
+# agreement rather than downloaded freely. The usual routes:
+#   * IWF (UK)            — https://www.iwf.org.uk/  (hash list membership)
+#   * NCMEC (US)          — industry hash sharing programme
+#   * Project VIC / VICS  — law-enforcement aligned datasets
+# Obtaining these normally requires an organisational agreement and, in some
+# jurisdictions, a lawful basis. Talk to a lawyer before processing at scale.
+#
+# Note this is EXACT-match hashing: it catches byte-identical files only.
+# Perceptual (near-duplicate) image hashing is a further step, not yet built.
+# ---------------------------------------------------------------------------

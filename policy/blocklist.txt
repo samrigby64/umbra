@@ -1,0 +1,23 @@
+# Content blocklist — one rule per line, in the form:   category: regex
+# Lines starting with '#' are ignored.
+#
+# When a page's URL or text matches a rule, the page is BLOCKED at ingest: its
+# body is discarded and never stored. Only the URL, a content hash and the
+# matched category name are kept, so the event is auditable without retaining
+# the material itself.
+#
+# ---------------------------------------------------------------------------
+# Only the illustrative rules below are active — they are deliberately narrow
+# and are NOT a safety net. Keyword matching is weak protection: it is trivially
+# evaded and cannot reliably identify the categories that matter most.
+#
+# The real control for the worst material is the hash list in
+# known_bad_hashes.txt, plus choosing your crawl targets deliberately rather
+# than spidering link directories. Get legal advice before crawling at scale.
+# ---------------------------------------------------------------------------
+
+# Pages advertising malware/stealer log dumps (illustrative).
+malware-dumps: \b(stealer logs?\s+dump|ransomware builder)\b
+
+# Add your own categories below, e.g.:
+# my-category: \bsome pattern\b

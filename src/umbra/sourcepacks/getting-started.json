@@ -1,0 +1,45 @@
+{
+  "name": "getting-started",
+  "description": "Official onion services of well-known public organisations: a news site, a search engine and privacy/security software projects. Safe targets for trying the crawler; expect little 'intelligence' here, which is the point. Each entry was verified reachable over Tor, with a title matching the organisation, on the date shown. Onion addresses change, so re-verify before relying on them.",
+  "category": "example",
+  "version": "2026-09-26",
+  "generated_from": "hand-picked public services, each verified over Tor before inclusion",
+  "sources": [
+    {
+      "url": "http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion/",
+      "note": "The Tor Project",
+      "last_seen": "2026-09-26",
+      "evidence": "HTTP 200 over Tor; page title: Tor Project | Anonymity Online"
+    },
+    {
+      "url": "https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/",
+      "note": "DuckDuckGo",
+      "last_seen": "2026-09-26",
+      "evidence": "HTTP 200 over Tor; page title: DuckDuckGo - Protection. Privacy. Peace of mind."
+    },
+    {
+      "url": "https://www.bbcweb3hytmzhn5d532owbu6oqadra5z3ar726vq5kgwwn6aucdccrad.onion/",
+      "note": "BBC News",
+      "last_seen": "2026-09-26",
+      "evidence": "HTTP 200 over Tor; page title: BBC Home - Breaking News, World News, US News, Sports, Business, Innov"
+    },
+    {
+      "url": "http://qubesosfasa4zl44o4tws22di6kepyzfeqv3tg4e3ztknltfxqrymdad.onion/",
+      "note": "Qubes OS",
+      "last_seen": "2026-09-26",
+      "evidence": "HTTP 200 over Tor; page title: Qubes OS: A reasonably secure operating system | Qubes OS"
+    },
+    {
+      "url": "http://dds6qkxpwdeubwucdiaord2xgbbeyds25rbsgr73tbfpqpt4a6vjwsyd.onion/",
+      "note": "Whonix",
+      "last_seen": "2026-09-26",
+      "evidence": "HTTP 200 over Tor; page title: Whonix - Superior Internet Privacy"
+    },
+    {
+      "url": "https://brave4u7jddbv7cyviptqjc7jusxh72uik7zt6adtckl5f4nwy2v72qd.onion/",
+      "note": "Brave",
+      "last_seen": "2026-09-26",
+      "evidence": "HTTP 200 over Tor; page title: The browser that puts you first | Brave"
+    }
+  ]
+}

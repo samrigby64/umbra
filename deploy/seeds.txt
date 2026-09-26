@@ -1,0 +1,6 @@
+# Seed URLs for the worker — one per line. Lines starting with # are ignored.
+#
+# No seeds ship with the project: the crawler only visits what you list here.
+# Add your starting .onion URLs below, then `docker compose restart worker`.
+#
+# http://someindex................................................onion/
